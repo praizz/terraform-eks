@@ -18,8 +18,14 @@ $ aws configure
   Default region name [eu-west-2]:
   Default output format [None]: 
   ```
-
-## Deploy the code
+## To create S3 and Dynamo DB for remote state and state locking
+```
+$ cd terraform-eks/remote-state-locking
+$ terraform init
+$ terraform plan
+$ terraform apply
+```
+## Deploy the code for EKS Cluster and VPC
 ```
 $ git clone https://github.com/praizz/terraform-eks
 $ cd terraform-eks
