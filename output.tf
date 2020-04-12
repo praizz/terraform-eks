@@ -10,3 +10,11 @@ output "config_map_aws_auth" {
   description = "A kubernetes configuration to authenticate to this EKS cluster."
   value       = module.eks-sample-cluster.config_map_aws_auth
 }
+output "programmatic-user-access-key-secret" {
+  description = "access key secrets for aws programmatic user"
+  value = aws_iam_access_key.programmatic-user-access-key.encrypted_secret
+}
+output "console-user-login-profile-password" {
+  description = "password for aws console user"
+  value = aws_iam_user_login_profile.console-user.encrypted_password
+}

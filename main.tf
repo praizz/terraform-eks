@@ -14,6 +14,7 @@ data "aws_eks_cluster_auth" "sample-cluster" {
 data "aws_availability_zones" "available" {
 }
 
+
 #this has to be there, it is the auth token that allows communication with eks-cluster
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.sample-cluster.endpoint
@@ -22,9 +23,10 @@ provider "kubernetes" {
   load_config_file       = false
   version                = "~> 1.9"
 }
+
 ################# EKS CLUSTER
 module "eks-sample-cluster" {
-  source          = "terraform-aws-modules/eks/aws"
+  source          = "./modules/terraform-aws-eks-master"
   cluster_name    = var.cluster-name
   subnets         = module.vpc.private_subnets      
   vpc_id          = module.vpc.vpc_id
@@ -36,7 +38,7 @@ module "eks-sample-cluster" {
       asg_min_size  = 1
       asg_desired_capacity = 1
     }
-  ]s
+  ]
 }
 
 locals {
@@ -221,3 +223,64 @@ module "vpc" {
     "kubernetes.io/role/internal-elb"             = "1"
   }
 }
+
+
+########################### USERS AND PERMISSIONS
+
+############# CREATE GROUP
+resource "aws_iam_group" "groups" {
+  name = var.group-name
+}
+
+############# CREATE GROUP POLICY 
+resource "aws_iam_group_policy_attachment" "groups-policy-attachment" {
+    group = aws_iam_group.groups.name
+    policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+############# CREATE USERS
+######## Programmatic access (access key and secret key)
+resource "aws_iam_user" "programmatic-user" {
+  name = var.programmatic-user
+  tags = {
+    name = var.programmatic-user
+  }
+}
+
+resource "aws_iam_access_key" "programmatic-user-access-key" {
+  user    = aws_iam_user.programmatic-user.name
+  pgp_key = var.pgp-key 
+}
+
+######## AWS Management Console access (username and password)
+resource "aws_iam_user" "console-user" {
+  name = var.console-user
+  force_destroy = true
+  tags = {
+    name = var.console-user
+  }
+}
+resource "aws_iam_user_login_profile" "console-user" {
+  user    = aws_iam_user.console-user.name
+  pgp_key = var.pgp-key
+}
+
+############# ATTACH USERS TO GROUP
+resource "aws_iam_group_membership" "group-members" {
+  name = var.group-members
+  users = [
+      aws_iam_user.programmatic-user.name,
+      aws_iam_user.console-user.name
+  ] 
+  group = aws_iam_group.groups.name
+}
+
+
+
+
+
+
+
+
+
+
